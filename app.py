@@ -179,3 +179,9 @@ if upward_trending_stocks:
     st.success(f"You selected: {selected_stock}")
 else:
     st.info("No stocks currently meet the upward trend conditions.")
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("📬 **Contact Me**")
+if st.sidebar.button("Get in Touch"):
+    st.sidebar.markdown("📧 Email: yourname@example.com")
+    st.sidebar.markdown("🔗 [LinkedIn](https://www.linkedin.com/in/yourprofile)")
