@@ -156,17 +156,71 @@ if portfolio_file:
     st.subheader("🔗 Correlation Matrix")
     plot_correlation_matrix(portfolio_df)
 
-st.subheader("📈 Top Gainers & 📉 Top Losers in NIFTY 200")
+# --- Top Gainers and Losers in Card Style ---
+st.markdown("<h2 style='text-align:center;'>📊 Market Movers: Top 5 Gainers & Losers</h2>", unsafe_allow_html=True)
 
-tickers_df = get_nifty_200_tickers()
-top_gainers, top_losers = get_top_movers(tickers_df['Ticker'].tolist())
+# CSS for cards
+st.markdown("""
+<style>
+.card-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.card {
+    background-color: #1e1e1e;
+    color: white;
+    padding: 1rem;
+    border-radius: 10px;
+    width: 180px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+}
+.card.up {
+    border-left: 5px solid #00ff00;
+}
+.card.down {
+    border-left: 5px solid #ff4d4d;
+}
+.arrow {
+    font-size: 2rem;
+}
+</style>
+""", unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
+# Generate gain/loss data
+gain_data = []
+for t in nifty_200:
+    try:
+        df = fetch_stock_data(t, date.today().replace(year=date.today().year - 1), date.today())
+        if len(df) >= 2:
+            change = ((df['Close'][-1] - df['Close'][-2]) / df['Close'][-2]) * 100
+            gain_data.append((t, round(change, 2)))
+    except:
+        pass
 
-with col1:
-    st.markdown("### 🔼 Top Gainers")
-    st.dataframe(top_gainers)
+sorted_gainers = sorted(gain_data, key=lambda x: x[1], reverse=True)
+top_5_gainers = sorted_gainers[:5]
+top_5_losers = sorted_gainers[-5:]
 
-with col2:
-    st.markdown("### 🔽 Top Losers")
-    st.dataframe(top_losers)
+# Function to create HTML card
+def create_card(symbol, change, direction):
+    arrow = "⬆️" if direction == "up" else "⬇️"
+    change_color = "#00ff00" if direction == "up" else "#ff4d4d"
+    return f"""
+    <div class="card {direction}">
+        <div class="arrow">{arrow}</div>
+        <h3>{symbol}</h3>
+        <p style="color:{change_color}; font-size: 1.2rem;"><strong>{change}%</strong></p>
+    </div>
+    """
+
+# Display cards in grid
+st.markdown("<h4>Top 5 Gainers</h4>", unsafe_allow_html=True)
+gainers_html = "<div class='card-container'>" + "".join([create_card(s, c, "up") for s, c in top_5_gainers]) + "</div>"
+st.markdown(gainers_html, unsafe_allow_html=True)
+
+st.markdown("<h4>Top 5 Losers</h4>", unsafe_allow_html=True)
+losers_html = "<div class='card-container'>" + "".join([create_card(s, c, "down") for s, c in top_5_losers]) + "</div>"
+st.markdown(losers_html, unsafe_allow_html=True)
