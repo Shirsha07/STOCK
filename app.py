@@ -157,43 +157,63 @@ if portfolio_file:
     plot_correlation_matrix(portfolio_df)
 
 # --- Top Gainers and Losers in Card Style ---
-st.markdown("<h2 style='text-align:center;'>📊 Market Movers: Top 5 Gainers & Losers</h2>", unsafe_allow_html=True)
+# --- Top Gainers and Losers in Stylish Card Style ---
+st.markdown("<h2 style='text-align:center; color:#f9fafb;'>📈 Top 5 Gainers & 📉 Top 5 Losers</h2>", unsafe_allow_html=True)
 
-# CSS for cards
+# Modern CSS styling for glowing cards
 st.markdown("""
 <style>
 .card-container {
     display: flex;
-    justify-content: space-around;
     flex-wrap: wrap;
-    gap: 1rem;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 1rem 0;
 }
 .card {
-    background-color: #1e1e1e;
-    color: white;
+    width: 200px;
+    background: linear-gradient(135deg, #1f1f1f, #292929);
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.15);
     padding: 1rem;
-    border-radius: 10px;
-    width: 180px;
+    color: white;
     text-align: center;
-    box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+    transition: 0.3s ease-in-out;
 }
-.card.up {
-    border-left: 5px solid #00ff00;
+.card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
 }
-.card.down {
-    border-left: 5px solid #ff4d4d;
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
 }
-.arrow {
+.card-change {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+}
+.up .card-change {
+    color: #00ff88;
+}
+.down .card-change {
+    color: #ff4d4d;
+}
+.card-icon {
     font-size: 2rem;
+    margin-bottom: 0.5rem;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Generate gain/loss data
+# Get Nifty 200 tickers from CSV
+nifty_200 = get_nifty_200_tickers()['Symbol'].tolist()
+
+# Fetch data and calculate changes
 gain_data = []
 for t in nifty_200:
     try:
-        df = fetch_stock_data(t, date.today().replace(year=date.today().year - 1), date.today())
+        df = yf.Ticker(t).history(period="2d")
         if len(df) >= 2:
             change = ((df['Close'][-1] - df['Close'][-2]) / df['Close'][-2]) * 100
             gain_data.append((t, round(change, 2)))
@@ -204,22 +224,30 @@ sorted_gainers = sorted(gain_data, key=lambda x: x[1], reverse=True)
 top_5_gainers = sorted_gainers[:5]
 top_5_losers = sorted_gainers[-5:]
 
-# Function to create HTML card
-def create_card(symbol, change, direction):
-    arrow = "⬆️" if direction == "up" else "⬇️"
-    change_color = "#00ff00" if direction == "up" else "#ff4d4d"
+# Generate cards HTML
+def generate_card(symbol, change, is_up=True):
+    direction = "up" if is_up else "down"
+    icon = "📈" if is_up else "📉"
     return f"""
     <div class="card {direction}">
-        <div class="arrow">{arrow}</div>
-        <h3>{symbol}</h3>
-        <p style="color:{change_color}; font-size: 1.2rem;"><strong>{change}%</strong></p>
+        <div class="card-icon">{icon}</div>
+        <div class="card-title">{symbol}</div>
+        <div class="card-change">{change}%</div>
     </div>
     """
 
-# Display cards in grid
-st.markdown("<h4>Top 5 Gainers</h4>", unsafe_allow_html=True)
-gainers_html = "<div class='card-container'>" + "".join([create_card(s, c, "up") for s, c in top_5_gainers]) + "</div>"
+gainers_html = "<div class='card-container'>" + "".join([generate_card(s, c, True) for s, c in top_5_gainers]) + "</div>"
+losers_html = "<div class='card-container'>" + "".join([generate_card(s, c, False) for s, c in top_5_losers]) + "</div>"
+
+# Show cards
+st.markdown("#### 🟢 Gainers", unsafe_allow_html=True)
 st.markdown(gainers_html, unsafe_allow_html=True)
+st.markdown("#### 🔴 Losers", unsafe_allow_html=True)
+st.markdown(losers_html, unsafe_allow_html=True)
+
+
+
+
 
 st.markdown("<h4>Top 5 Losers</h4>", unsafe_allow_html=True)
 losers_html = "<div class='card-container'>" + "".join([create_card(s, c, "down") for s, c in top_5_losers]) + "</div>"
